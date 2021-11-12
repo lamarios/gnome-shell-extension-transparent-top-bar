@@ -113,7 +113,7 @@ class Extension {
         this._actorSignalIds = null;
         this._windowSignalIds = null;
 
-        this._setTransparent(false);
+        this._setAllTransparent(false);
     }
 
     _onWindowActorAdded(container, metaWindowActor) {
@@ -133,12 +133,12 @@ class Extension {
 
     _updateTransparent() {
         if(!this._darkFullScreen){
-            this._setTransparent(true);
+            this._setAllTransparent(true);
             return
         }
 
         if (Main.panel.has_style_pseudo_class('overview') || !Main.sessionMode.hasWindows) {
-            this._setTransparent(true);
+            this._setAllTransparent(true);
             return;
         }
 
@@ -149,38 +149,89 @@ class Extension {
         // Get all the windows in the active workspace that are in the primary monitor and visible.
         const workspaceManager = global.workspace_manager;
         const activeWorkspace = workspaceManager.get_active_workspace();
+
         const windows = activeWorkspace.list_windows().filter(metaWindow => {
-            return metaWindow.is_on_primary_monitor()
-                && metaWindow.showing_on_its_workspace()
+            return  metaWindow.showing_on_its_workspace()
                 && !metaWindow.is_hidden()
                 && metaWindow.get_window_type() !== Meta.WindowType.DESKTOP;
+        })
+
+        var monitors = {};
+        windows.forEach(window => {
+            if (monitors[window.get_monitor()]) {
+                monitors[window.get_monitor()].push(window)
+            } else {
+                monitors[window.get_monitor()] = [window];
+            }
         });
 
-        // Check if at least one window is near enough to the panel.
-        const panelTop = Main.panel.get_transformed_position()[1];
-        const panelBottom = panelTop + Main.panel.get_height();
-        const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-        const isNearEnough = windows.some(metaWindow => {
-            const verticalPosition = metaWindow.get_frame_rect().y;
-            return verticalPosition < panelBottom + 5 * scale;
-        });
+        Main.layoutManager.monitors.forEach(monitor => {
+            const panel = (() => {
+                if (monitor.index == Main.layoutManager.primaryMonitor.index) {
+                    return Main.panel;
+                } else if (Main.mmPanel) {
+                    return Main.mmPanel[monitor.index - 1];
+                }
+                return null;
+            })();
 
-        this._setTransparent(!isNearEnough);
+            if (!panel) {
+                return;
+            }
+
+            const monitor_windows = monitors[monitor.index];
+            if (monitor_windows) {
+                const panelTop = panel.get_transformed_position()[1];
+                const panelBottom = panelTop + panel.get_height();
+                const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+                const isNearEnough = monitor_windows.some(metaWindow => {
+                    const verticalPosition = metaWindow.get_frame_rect().y;
+                    return verticalPosition < panelBottom + 5 * scale;
+                });
+
+                this._setTransparent(!isNearEnough, panel);
+            } else {
+                this._setTransparent(true, panel);
+            }
+        });
     }
 
-    _setTransparent(transparent) {
+    _setTransparent(transparent, panel) {
         const transparency = this._settings.get_int("transparency");
+
         if (transparent) {
-            Main.panel.remove_style_class_name('transparent-top-bar--solid');
-            Main.panel.add_style_class_name('transparent-top-bar--transparent');
-            Main.panel.add_style_class_name('transparent-top-bar--transparent-' + transparency);
+            panel.remove_style_class_name('transparent-top-bar--solid');
+            panel.add_style_class_name('transparent-top-bar--transparent');
+            panel.add_style_class_name('transparent-top-bar--transparent-' + transparency);
         } else {
-            Main.panel.add_style_class_name('transparent-top-bar--solid');
-            Main.panel.remove_style_class_name('transparent-top-bar--transparent');
-            Main.panel.remove_style_class_name('transparent-top-bar--transparent-' + transparency);
+            panel.add_style_class_name('transparent-top-bar--solid');
+            panel.remove_style_class_name('transparent-top-bar--transparent');
+            panel.remove_style_class_name('transparent-top-bar--transparent-' + transparency);
         }
     }
 
+    _setAllTransparent(transparent) {
+        const transparency = this._settings.get_int("transparency");
+        var panels = [Main.panel];
+        if (Main.mmPanel) {
+            panels = panels.concat(Main.mmPanel);
+        }
+
+        if (transparent) {
+            panels.forEach(panel => {
+                panel.remove_style_class_name('transparent-top-bar--solid');
+                panel.add_style_class_name('transparent-top-bar--transparent');
+                panel.add_style_class_name('transparent-top-bar--transparent-' + transparency);
+            })
+
+        } else {
+            panels.forEach(panel => {
+                panel.add_style_class_name('transparent-top-bar--solid');
+                panel.remove_style_class_name('transparent-top-bar--transparent');
+                panel.remove_style_class_name('transparent-top-bar--transparent-' + transparency);
+            })
+        }
+    }
 };
 
 function init() {
