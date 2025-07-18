@@ -4,6 +4,7 @@ import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Ex
 
 const TRANSPARENCY = 'transparency';
 const DARK_FULL_SCREEN = 'dark-full-screen';
+const DISABLE_TEXT_SHADOW = 'disable-text-shadow';
 
 export default class TransparentTopBarPrefsWidget extends ExtensionPreferences {
 
@@ -11,6 +12,7 @@ export default class TransparentTopBarPrefsWidget extends ExtensionPreferences {
         window._settings = this.getSettings('com.ftpix.transparentbar');
         const opacity = window._settings.get_int(TRANSPARENCY);
         const darkFullScreen = window._settings.get_boolean(DARK_FULL_SCREEN);
+        const disableTextShadow = window._settings.get_boolean(DISABLE_TEXT_SHADOW);
 
         const page = new Adw.PreferencesPage();
 
@@ -54,6 +56,26 @@ export default class TransparentTopBarPrefsWidget extends ExtensionPreferences {
         row.append(label);
         row.append(sw);
         group.add(row);
+
+        const shadowRow = new Gtk.Box();
+        shadowRow.set_orientation(Gtk.HORIZONTAL);
+        shadowRow.set_margin_top(20);
+        shadowRow.set_margin_bottom(20);
+
+        const shadowSwitch = new Gtk.Switch();
+        shadowSwitch.set_active(disableTextShadow);
+        shadowSwitch.connect('state-set', (sw) => {
+            window._settings.set_boolean(DISABLE_TEXT_SHADOW, sw.get_active());
+        });
+        shadowSwitch.set_halign(Gtk.Align.END);
+
+        const shadowLabel = Gtk.Label.new('Disable text shadow');
+        shadowLabel.set_hexpand(true);
+        shadowLabel.set_halign(Gtk.Align.START);
+
+        shadowRow.append(shadowLabel);
+        shadowRow.append(shadowSwitch);
+        group.add(shadowRow);
 
         page.add(group);
 

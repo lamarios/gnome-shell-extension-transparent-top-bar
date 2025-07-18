@@ -13,6 +13,7 @@ export default class TransparentTopBarWithCustomTransparencyExtension extends Ex
         this._delayedTimeoutId = null;
         this.transparencyChangeDebounce = null;
         this.darkFullScreenChangeDebounce = null;
+        this.textShadowChangeDebounce = null;
     }
 
     enable() {
@@ -20,6 +21,7 @@ export default class TransparentTopBarWithCustomTransparencyExtension extends Ex
         this._settings = this.getSettings('com.ftpix.transparentbar');
         this._currentTransparency = this._settings.get_int('transparency');
         this._darkFullScreen = this._settings.get_boolean('dark-full-screen');
+        this._disableTextShadow = this._settings.get_boolean('disable-text-shadow');
 
         this._actorSignalIds = new Map();
         this._windowSignalIds = new Map();
@@ -72,11 +74,21 @@ export default class TransparentTopBarWithCustomTransparencyExtension extends Ex
             });
             return;
         }
+
+        if (key === 'disable-text-shadow') {
+            this._disableTextShadow = this._settings.get_boolean('disable-text-shadow');
+            GLib.source_remove(this.textShadowChangeDebounce);
+            this.textShadowChangeDebounce = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
+                this._updateTextShadow();
+            });
+            return;
+        }
     }
 
     disable() {
         GLib.source_remove(this.transparencyChangeDebounce);
         GLib.source_remove(this.darkFullScreenChangeDebounce);
+        GLib.source_remove(this.textShadowChangeDebounce);
 
         for (const actorSignalIds of [this._actorSignalIds, this._windowSignalIds]) {
             for (const [actor, signalIds] of actorSignalIds) {
@@ -94,6 +106,7 @@ export default class TransparentTopBarWithCustomTransparencyExtension extends Ex
         this._delayedTimeoutId = null;
 
         this._setTransparent(false);
+        Main.panel.remove_style_class_name('no-text-shadow');
         this._settings = null;
     }
 
@@ -118,6 +131,14 @@ export default class TransparentTopBarWithCustomTransparencyExtension extends Ex
             this._delayedTimeoutId = null;
             return GLib.SOURCE_REMOVE;
         });
+    }
+
+    _updateTextShadow() {
+        if (this._disableTextShadow) {
+            Main.panel.add_style_class_name('no-text-shadow');
+        } else {
+            Main.panel.remove_style_class_name('no-text-shadow');
+        }
     }
 
     _updateTransparent() {
@@ -167,6 +188,8 @@ export default class TransparentTopBarWithCustomTransparencyExtension extends Ex
             Main.panel.remove_style_class_name('transparent-top-bar');
             Main.panel.remove_style_class_name('transparent-top-bar-' + transparency);
         }
+        
+        this._updateTextShadow();
     }
 
 };
