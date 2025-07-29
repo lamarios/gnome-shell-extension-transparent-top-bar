@@ -13,5 +13,10 @@
                 bar, false and the bar remains transparent at all time
             </description>
         </key>
+        <key type="b" name="disable-text-shadow">
+            <default>false</default>
+            <summary>Disable text shadow</summary>
+            <description>If true, text shadows will be disabled in the top bar. If false (default), text will have shadows to improve readability on transparent backgrounds.</description>
+        </key>
     </schema>
 </schemalist>

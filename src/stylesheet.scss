@@ -60,3 +60,30 @@
 #panel.transparent-top-bar:checked .system-status-icon {
     icon-shadow: black 0 2px 2px;
 }
+
+#panel.no-text-shadow .panel-button {
+    text-shadow: none !important;
+}
+
+#panel.no-text-shadow:hover {
+    text-shadow: none !important;
+}
+
+#panel.no-text-shadow .system-status-icon,
+#panel.no-text-shadow .app-menu-icon > StIcon,
+#panel.no-text-shadow .popup-menu-arrow {
+    icon-shadow: none !important;
+}
+
+#panel.no-text-shadow:hover .system-status-icon,
+#panel.no-text-shadow:hover .app-menu-icon > StIcon,
+#panel.no-text-shadow:hover .popup-menu-arrow {
+    icon-shadow: none !important;
+}
+
+#panel.no-text-shadow:active .system-status-icon,
+#panel.no-text-shadow:overview .system-status-icon,
+#panel.no-text-shadow:focus .system-status-icon,
+#panel.no-text-shadow:checked .system-status-icon {
+    icon-shadow: none !important;
+}
